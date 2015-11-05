@@ -1,0 +1,40 @@
+language: php
+
+sudo: false
+
+php:
+  - 5.5
+
+services:
+  - mysql
+
+addons:
+  code_climate:
+    repo_token: b58cbfca0e70a334ecf844b492a1f91eee954420125b08263c47ff38a1434fbe
+
+before_install:
+  - composer self-update
+
+install:
+  - composer install --prefer-source --no-interaction
+
+before_script:
+  - mysql -e 'create database carpool;'
+  - mv .env.travis .env
+  - php artisan migrate:refresh --seed --force
+
+script:
+  - phpunit --stderr --configuration phpunit.xml --debug
+  - phpunit --coverage-clover build/logs/clover.xml
+  - ./vendor/bin/test-reporter
+  - vendor/bin/phpcs --standard=psr2 app/
+  - vendor/bin/phpcpd --verbose app/
+  - vendor/bin/phpmd app/ text codesize,unusedcode,naming,design
+  - vendor/bin/phploc app/
+
+notifications:
+  email:
+    recipients:
+      - maikovisky@gmail.com
+    on_success: change
+    on_failure: always
